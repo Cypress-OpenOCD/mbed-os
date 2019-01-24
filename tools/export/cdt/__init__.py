@@ -46,7 +46,8 @@ class Eclipse(Makefile):
 
     def generate(self):
         """Generate Makefile, .cproject & .project Eclipse project file,
-        py_ocd_settings launch file, and software link .p2f file
+        pyocd_settings launch files for both GNU ARM Eclipse and
+        GNU MCU Eclipse plug-ins, and software link .p2f file
         """
         super(Eclipse, self).generate()
         starting_dot = re.compile(r'(^[.]/|^[.]$)')
@@ -62,19 +63,27 @@ class Eclipse(Makefile):
         
         launch_cfgs = {}
         for launch_name in supported_launches:
-            launch = dict(ctx.items() + {'device': self.get_target_config(ctx, launch_name)}.items())
+            launch = dict(ctx.items())
+            launch.update({'device': self.get_target_config(ctx, launch_name)}.items())
             launch_cfgs.update({launch_name: launch})
             
         if not exists(join(self.export_dir,'eclipse-extras')):
             makedirs(join(self.export_dir,'eclipse-extras'))
 
         for launch_name, ctx in launch_cfgs.items():
-            self.gen_file('cdt/%s' % 'pyocd_settings.tmpl', ctx, join('eclipse-extras',
+            # Generate launch configurations for former GNU ARM Eclipse plug-in
+            self.gen_file('cdt/%s' % 'pyocd_settings_gnu_arm.tmpl', ctx, join('eclipse-extras',
                             '{target}_{project}_{conf}_{launch}.launch'.format(
                                                                         target=self.target,
                                                                         project=self.project_name,
                                                                         conf=launch_name,
                                                                         launch='pyocd_settings')))
+            # Generate launch configurations for GNU MCU Eclipse plug-in
+            self.gen_file('cdt/%s' % 'pyocd_settings_gnu_mcu.tmpl', ctx, join('eclipse-extras',
+                            '{target}_{project}_{conf}.launch'.format(
+                                                                        target=self.target,
+                                                                        project=self.project_name,
+                                                                        conf=launch_name)))
 
         self.gen_file('cdt/necessary_software.tmpl', ctx,
                       join('eclipse-extras','necessary_software.p2f'))
